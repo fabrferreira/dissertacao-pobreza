@@ -134,7 +134,7 @@ pnadc_clean <- pnadc_raw |>
     trabalha_agricultura = ifelse(
       VD4010 == 1, "Trabalha na agricultura", "Não trabalha na agricultura"
       )
-)
+    )
 
 dplyr::glimpse(pnadc_clean)
 
