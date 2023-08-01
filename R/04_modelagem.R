@@ -2,6 +2,7 @@
 
 library(dplyr)
 library(ggplot2)
+library(showtext)
 library(srvyr)
 library(survey)
 library(rlang)
@@ -9,6 +10,10 @@ library(margins)
 library(convey)
 library(xtable)
 library(stargazer)
+
+font_add_google(name = "Inter", family = "custom")
+
+showtext_auto()
 
 # Estimação econométrica --------------------------------------------------
 
@@ -109,11 +114,155 @@ stargazer::stargazer(
 
 ## Calculando os efeitos marginais
 
-efeitos_modelo_sm <- margins::margins(model = modelo_sm, data = pnadc)
+ef_modelo_sm <- margins::margins(model = modelo_sm, data = pnadc)
 
-efeitos_modelo_rm <- margins::margins(model = modelo_rm, data = pnadc)
+ef_modelo_rm <- margins::margins(model = modelo_rm, data = pnadc)
 
-## Exportando os efeitos marginais em formato \LaTeX
+## Exportando os efeitos marginais em formato .xlsx e \LaTeX 
+
+## Efeitos marginais do modelo 1
+
+broom::tidy(ef_modelo_sm) |> 
+  dplyr::arrange(desc(estimate)) |>  
+  writexl::write_xlsx("tables/ef_modelo_sm.xlsx") # |> 
+  #xtable::xtable()
+
+## Efeitos marginais do modelo 2
+
+broom::tidy(ef_modelo_rm) |> 
+  dplyr::arrange(desc(estimate)) |> 
+  writexl::write_xlsx("tables/ef_modelo_rm.xlsx") # |> 
+  #xtable::xtable()
+
+# Estimação do `conditional predicted average marginal effects`
+
+## A função abaixo calcula os os efeitos marginais condicionais para ambas
+## as linhas de pobreza e salva os gráficos
+
+estimate_margins <- function(var_name = "",
+                             xlabel = "", 
+                             ylabel = "", 
+                             plot_name = ""
+                             ){
+  # Modelo 1
+  
+  cplot_sm <- margins::cplot(modelo_sm, var_name, draw = FALSE)
+  
+  # Modelo 2
+  
+  cplot_rm <- margins::cplot(modelo_rm, var_name, draw = FALSE)
+  
+  # Combina os dois `tibbles`
+  
+  cplot_binned <- dplyr::bind_rows(
+    "Linha de pobreza: Salário mínimo" = cplot_sm,
+    "Linha de pobreza: Renda domiciliar *Per capita*" = cplot_rm,
+    .id = "id"
+    )
+  
+  # Gera o gráfico
+  
+  gen_plot <- cplot_binned |> 
+    dplyr::group_by(id) |> 
+    ggplot2::ggplot(aes(x = xvals))+
+    ggplot2::geom_line(aes(y = yvals), color = "black", linewidth = 1) +
+    ggplot2::geom_line(aes(y = upper), linetype = 2, color = "red", linewidth = 1) +
+    ggplot2::geom_line(aes(y = lower), linetype = 2, color = "red", linewidth = 1) +
+    ggplot2::geom_hline(yintercept = 0)+
+    ggplot2::facet_wrap(~id)+
+    ggplot2::theme_classic()+
+    ggplot2::theme(
+      strip.text = ggtext::element_markdown(size = 18),
+      strip.background = element_blank(),
+      axis.text = element_text(color = "black", family = "custom", size = 14),
+      axis.title = element_text(color = "black", family = "custom", size = 16)
+      )+
+    ggplot2::ylim(0, 1)+
+    ggplot2::labs(
+      color = "Linha de pobreza",
+      x = xlabel,
+      y = ylabel
+      )
+  
+  # Salva o gráfico
+  
+  ggplot2::ggsave(
+    plot = gen_plot,
+    filename = plot_name, 
+    width = 14, 
+    height = 8, 
+    dpi = 200, 
+    bg = "white",
+    path = "plots/",
+    units = "in"
+    )
+  
+  return(gen_plot)
+}
 
 
+# Gera os gráficos dos efeitos marginais ----------------------------------
 
+## Anos de estudo do chefe de família
+
+estimate_margins(var_name = "ano_estudo_cf",
+                 xlabel = "Anos de estudo",
+                 ylabel = "Probabilidade",
+                 plot_name = "efeitos_marginais_anos_estudo.png"
+                 )
+
+## Sexo do chefe de família
+
+estimate_margins(var_name = "sexo_cf",
+                 xlabel = "Sexo",
+                 ylabel = "Probabilidade",
+                 plot_name = "efeitos_marginais_sexo_cf.png"
+                 )
+
+## Idade do chefe de família
+
+estimate_margins(var_name = "idade_cf",
+                 xlabel = "Idade",
+                 ylabel = "Probabilidade",
+                 plot_name = "efeitos_marginais_idade_cf.png"
+                 )
+
+## Raça do chefe de família
+
+estimate_margins(var_name = "raca_cf",
+                 xlabel = "Raça",
+                 ylabel = "Probabilidade",
+                 plot_name = "efeitos_marginais_raca_cf.png"
+                 )
+
+## Quantidade de membros da família
+
+estimate_margins(var_name = "num_membros",
+                 xlabel = "Número de membros da família",
+                 ylabel = "Probabilidade",
+                 plot_name = "efeitos_marginais_num_membros.png"
+                 )
+
+## Trabalha na agricultura
+
+estimate_margins(var_name = "trab_agric",
+                 xlabel = "Trabalha na agricultura",
+                 ylabel = "Probabilidade",
+                 plot_name = "efeitos_marginais_trab_agric.png"
+                 )
+
+## Localização do domicílio
+
+estimate_margins(var_name = "local_dom",
+                 xlabel = "Localização do domicílio (Zona)",
+                 ylabel = "Probabilidade",
+                 plot_name = "efeitos_marginais_local_dom.png"
+                 )
+
+## Região de localização do domicílio
+
+estimate_margins(var_name = "regiao_dom",
+                 xlabel = "Região de localização do domicílio (Região)",
+                 ylabel = "Probabilidade",
+                 plot_name = "efeitos_marginais_regiao_dom.png"
+                 )

@@ -13,10 +13,9 @@ library(PNADcIBGE)
 
 # Importando dados --------------------------------------------------------
 
-variables <- c(
-  "UF", "UPA", "V1008", "V1014", "V2007", "V2010", "VD3004", "V1022",
-  "V2005", "V2009", "VD3005", "VD5008", "V3001", "VD4010", "V2001"
-  )
+variables <- c("UF", "UPA", "V1008", "V1014", "V2007", "V2010", "VD3004", "V1022",
+               "V2005", "V2009", "VD3005", "VD5008", "V3001", "VD4010", "V2001"
+               )
 
 pnadc_raw <- PNADcIBGE::get_pnadc(year = 2019,
                                   interview = 1,
