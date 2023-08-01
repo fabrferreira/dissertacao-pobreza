@@ -9,7 +9,9 @@ library(ggplot2)
 
 ## Adiciona a `PNAD Contínua` à função `convey_prep()`
 
-pnadc_convey <- convey::convey_prep(pnadc_data)
+pnadc_convey <- pnadc_data |> 
+  dplyr::filter(chefe_domicilio == "Sim") |> 
+  convey::convey_prep()
 
 ## A função abaixo nos permite otimizar o fluxo de trabalho ao calcular
 ## o índice FGT, converter os resultados em um tibble e exportar como um
